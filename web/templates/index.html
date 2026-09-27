@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quantum Trade | Advanced Stock Trading Platform & Portfolio Simulator</title>
+  <meta name="description" content="Simulate real-time stock trading with stochastic market movements, live quote tracking, order execution, and portfolio performance analytics.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <!-- Ticker Tape Header -->
+  <div class="ticker-tape-container" id="tickerTapeContainer">
+    <div class="ticker-tape-track" id="tickerTapeTrack">
+      <!-- Injected via JavaScript -->
+      <span class="ticker-item"><span class="ticker-symbol">LOADING MARKET DATA...</span></span>
+    </div>
+  </div>
+
+  <!-- Main Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-logo">
+        <div class="pulse-indicator live" id="marketPulse"></div>
+        <div class="brand-text">
+          <span class="brand-name">QUANTUM<span class="brand-accent">TRADE</span></span>
+          <span class="brand-tagline">STOCHASTIC EXCHANGE TERMINAL</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulator Control Center -->
+    <div class="simulation-controls">
+      <div class="sim-badge" title="Market Status">
+        <span class="status-dot"></span>
+        <span id="marketStatusText">LIVE SIMULATION</span>
+      </div>
+
+      <div class="control-group">
+        <button id="btnAutoTick" class="btn btn-control active" title="Toggle Auto-Tick Market">
+          <span class="btn-icon" id="playPauseIcon">⏸</span>
+          <span id="playPauseText">Auto-Tick</span>
+        </button>
+        <button id="btnStepTick" class="btn btn-control" title="Advance market by 1 tick">
+          <span class="btn-icon">⏭</span> Step +1
+        </button>
+      </div>
+
+      <div class="control-group">
+        <label for="sentimentSelect" class="control-label">Regime:</label>
+        <select id="sentimentSelect" class="select-input" title="Change market sentiment drift">
+          <option value="neutral">Neutral (Normal)</option>
+          <option value="bullish">Bullish Rally (+0.6%)</option>
+          <option value="bearish">Bearish Selloff (-0.6%)</option>
+          <option value="volatile">High Volatility (2.5x)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="speedSelect" class="control-label">Speed:</label>
+        <select id="speedSelect" class="select-input" title="Simulation tick speed">
+          <option value="1000">1s (Fast)</option>
+          <option value="2500" selected>2.5s (Normal)</option>
+          <option value="5000">5s (Slow)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- User Profile & Action Bar -->
+    <div class="header-right">
+      <div class="user-pill" id="userPillBtn" title="Account Settings">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="userDisplayName">Alex Trader</div>
+          <div class="user-cash" id="userNavCash">$50,000.00</div>
+        </div>
+      </div>
+      <button id="btnDeposit" class="btn btn-primary btn-sm">+ Deposit</button>
+      <button id="btnExport" class="btn btn-secondary btn-sm" title="Export Portfolio to JSON">📥 Export</button>
+      <label for="importFileInput" class="btn btn-secondary btn-sm" title="Import Portfolio from JSON" style="cursor: pointer; margin-bottom: 0;">
+        📤 Import
+      </label>
+      <input type="file" id="importFileInput" accept=".json" style="display: none;">
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="app-layout">
+    <!-- Top Row: Metric KPI Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card glass-panel" id="cardNetWorth">
+        <div class="kpi-header">
+          <span class="kpi-title">TOTAL NET WORTH</span>
+          <span class="kpi-badge neutral" id="kpiNetWorthBadge">Real-Time</span>
+        </div>
+        <div class="kpi-value font-mono" id="kpiNetWorth">$0.00</div>
+        <div class="kpi-footer">
+          <span class="kpi-subtext" id="kpiAllTimePnl">All-time P&L: --</span>
+        </div>
+      </div>
+
+      <div class="kpi-card glass-panel">
+        <div class="kpi-header">
+          <span class="kpi-title">AVAILABLE CASH</span>
+          <span class="kpi-badge info">Buying Power</span>
+        </div>
+        <div class="kpi-value font-mono" id="kpiCash">$0.00</div>
+        <div class="kpi-footer">
+          <span class="kpi-subtext" id="kpiCashWeight">0.0% of portfolio</span>
+        </div>
+      </div>
+
+      <div class="kpi-card glass-panel">
+        <div class="kpi-header">
+          <span class="kpi-title">STOCK HOLDINGS</span>
+          <span class="kpi-badge info" id="kpiHoldingsCount">0 Assets</span>
+        </div>
+        <div class="kpi-value font-mono" id="kpiStocksVal">$0.00</div>
+        <div class="kpi-footer">
+          <span class="kpi-subtext" id="kpiUnrealizedPnl">Unrealized: $0.00</span>
+        </div>
+      </div>
+
+      <div class="kpi-card glass-panel">
+        <div class="kpi-header">
+          <span class="kpi-title">REALIZED P&L</span>
+          <span class="kpi-badge" id="kpiRealizedBadge">Closed Trades</span>
+        </div>
+        <div class="kpi-value font-mono" id="kpiRealizedPnl">$0.00</div>
+        <div class="kpi-footer">
+          <span class="kpi-subtext" id="kpiTxCount">0 Transactions</span>
+        </div>
+      </div>
+
+      <div class="kpi-card glass-panel">
+        <div class="kpi-header">
+          <span class="kpi-title">MARKET INDEX (SIM-SPX)</span>
+          <span class="kpi-badge" id="kpiIndexBadge">Benchmark</span>
+        </div>
+        <div class="kpi-value font-mono" id="kpiMarketIndex">+0.00%</div>
+        <div class="kpi-footer">
+          <span class="kpi-subtext" id="kpiTickCounter">Ticks: 0 | Vol: 0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace Split: Left Charting / Center Market / Right Holdings -->
+    <div class="workspace-grid">
+      
+      <!-- Left Column: Interactive Visual Charts (Portfolio Performance & Stock Candlestick/Area) -->
+      <div class="workspace-col col-main">
+        <!-- Interactive Chart Card -->
+        <div class="panel glass-panel">
+          <div class="panel-header">
+            <div class="tabs-nav">
+              <button class="tab-btn active" id="tabPerfChart" data-tab="performance">📈 Portfolio Performance Over Time</button>
+              <button class="tab-btn" id="tabStockChart" data-tab="stock">📊 Live Stock Chart (<span id="activeChartSymbol">AAPL</span>)</button>
+            </div>
+            <div class="chart-actions">
+              <span class="live-tag">● LIVE STREAM</span>
+            </div>
+          </div>
+
+          <div class="chart-content-area">
+            <!-- Portfolio Performance Chart View -->
+            <div class="chart-view active" id="viewPerfChart">
+              <div class="chart-metrics-bar">
+                <div class="metric-chip">
+                  <span class="chip-label">Start Balance:</span>
+                  <span class="chip-val font-mono" id="perfStartCash">$50,000.00</span>
+                </div>
+                <div class="metric-chip">
+                  <span class="chip-label">Current Net Worth:</span>
+                  <span class="chip-val font-mono" id="perfCurWorth">$50,000.00</span>
+                </div>
+                <div class="metric-chip">
+                  <span class="chip-label">Net Gain/Loss:</span>
+                  <span class="chip-val font-mono" id="perfNetPnl">+$0.00 (+0.00%)</span>
+                </div>
+              </div>
+              <div class="canvas-wrapper">
+                <canvas id="portfolioChartCanvas" width="800" height="300"></canvas>
+                <div class="chart-tooltip" id="perfTooltip"></div>
+              </div>
+            </div>
+
+            <!-- Stock Price History Chart View -->
+            <div class="chart-view" id="viewStockChart">
+              <div class="chart-metrics-bar">
+                <div class="stock-header-info">
+                  <span class="stock-active-sym" id="stockChartSym">AAPL</span>
+                  <span class="stock-active-name" id="stockChartName">Apple Inc.</span>
+                  <span class="stock-active-price font-mono" id="stockChartPrice">$0.00</span>
+                  <span class="stock-active-change font-mono" id="stockChartChange">+0.00 (+0.00%)</span>
+                </div>
+                <div class="stock-quick-trade">
+                  <button class="btn btn-buy btn-sm" id="btnQuickBuyFromChart">Buy Ticker</button>
+                  <button class="btn btn-sell btn-sm" id="btnQuickSellFromChart">Sell Ticker</button>
+                </div>
+              </div>
+              <div class="canvas-wrapper">
+                <canvas id="stockChartCanvas" width="800" height="300"></canvas>
+                <div class="chart-tooltip" id="stockTooltip"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Asset Allocation & Holdings Panel -->
+        <div class="panel glass-panel" style="margin-top: 1.5rem;">
+          <div class="panel-header">
+            <h2 class="panel-title">Your Open Positions & Asset Allocation</h2>
+            <span class="panel-subtitle" id="holdingsSubtitle">0 positions held</span>
+          </div>
+
+          <div class="allocation-bar-wrapper">
+            <div class="allocation-bar" id="allocationBar">
+              <!-- Dynamically populated segments -->
+            </div>
+            <div class="allocation-legend" id="allocationLegend">
+              <!-- Dynamically populated legend -->
+            </div>
+          </div>
+
+          <!-- Holdings Table -->
+          <div class="table-responsive">
+            <table class="data-table" id="holdingsTable">
+              <thead>
+                <tr>
+                  <th>ASSET</th>
+                  <th class="text-right">SHARES</th>
+                  <th class="text-right">AVG COST</th>
+                  <th class="text-right">MARKET PRICE</th>
+                  <th class="text-right">VALUATION</th>
+                  <th class="text-right">UNREALIZED P&L</th>
+                  <th class="text-right">WEIGHT</th>
+                  <th class="text-center">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="holdingsTableBody">
+                <tr>
+                  <td colspan="8" class="text-center empty-state">No open positions. Buy stocks from the market panel!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Transaction History Panel -->
+        <div class="panel glass-panel" style="margin-top: 1.5rem;">
+          <div class="panel-header">
+            <h2 class="panel-title">Transaction Audit Ledger</h2>
+            <span class="panel-subtitle" id="txCountSubtitle">All trade executions</span>
+          </div>
+          <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+            <table class="data-table" id="txTable">
+              <thead>
+                <tr>
+                  <th>TX ID</th>
+                  <th>TIMESTAMP</th>
+                  <th>TYPE</th>
+                  <th>SYMBOL</th>
+                  <th class="text-right">QUANTITY</th>
+                  <th class="text-right">EXEC PRICE</th>
+                  <th class="text-right">TOTAL AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody id="txTableBody">
+                <tr>
+                  <td colspan="7" class="text-center empty-state">No trade history yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Live Market Screener & Order Desk -->
+      <div class="workspace-col col-side">
+        <!-- Market Screener Panel -->
+        <div class="panel glass-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Market Screener</h2>
+            <span class="panel-subtitle" id="marketTickerCount">12 Stocks Listed</span>
+          </div>
+
+          <div class="screener-controls">
+            <input type="text" id="stockSearchInput" class="search-input" placeholder="🔍 Search symbol or company...">
+            <div class="filter-pills" id="sectorFilterPills">
+              <button class="pill active" data-sector="ALL">All</button>
+              <button class="pill" data-sector="Technology">Tech</button>
+              <button class="pill" data-sector="Semiconductors">Semis</button>
+              <button class="pill" data-sector="Financial">Finance</button>
+              <button class="pill" data-sector="WATCHLIST">★ Watchlist</button>
+            </div>
+          </div>
+
+          <!-- Stock List / Quotes -->
+          <div class="stock-list-container" id="stockListContainer">
+            <!-- Dynamically populated stock cards/rows -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Trade Order Execution Modal -->
+  <div class="modal-backdrop" id="tradeModalBackdrop">
+    <div class="modal-dialog glass-panel">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-tag" id="modalTradeType">BUY ORDER</span>
+          <h3 class="modal-title" id="modalStockTitle">AAPL - Apple Inc.</h3>
+        </div>
+        <button class="modal-close" id="modalCloseBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="order-type-toggle">
+          <button class="toggle-btn active" id="btnToggleBuy" data-type="BUY">BUY</button>
+          <button class="toggle-btn" id="btnToggleSell" data-type="SELL">SELL</button>
+        </div>
+
+        <div class="trade-quote-box">
+          <div class="quote-row">
+            <span class="quote-label">Current Market Price:</span>
+            <span class="quote-value font-mono" id="modalPrice">$0.00</span>
+          </div>
+          <div class="quote-row">
+            <span class="quote-label">Available Buying Power:</span>
+            <span class="quote-value font-mono" id="modalAvailableCash">$0.00</span>
+          </div>
+          <div class="quote-row">
+            <span class="quote-label">Shares Currently Owned:</span>
+            <span class="quote-value font-mono" id="modalOwnedShares">0 shares</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="input-header">
+            <label for="orderSharesInput">Number of Shares:</label>
+            <span class="max-badge" id="modalMaxSharesLabel">Max: 0</span>
+          </div>
+          <div class="quantity-input-wrapper">
+            <button class="qty-btn" id="btnQtyMinus">-</button>
+            <input type="number" id="orderSharesInput" min="1" step="1" value="1" class="qty-input font-mono">
+            <button class="qty-btn" id="btnQtyPlus">+</button>
+          </div>
+          <div class="slider-wrapper">
+            <input type="range" id="orderSharesSlider" min="1" max="100" value="1" class="range-slider">
+          </div>
+        </div>
+
+        <!-- Order Summary Receipt -->
+        <div class="order-summary-box">
+          <div class="summary-line">
+            <span>Estimated Cost:</span>
+            <span class="font-mono" id="modalEstimatedCost">$0.00</span>
+          </div>
+          <div class="summary-line">
+            <span>Commission Fee:</span>
+            <span class="font-mono text-success">$0.00 (Zero Fee)</span>
+          </div>
+          <hr class="summary-divider">
+          <div class="summary-line total-line">
+            <span>Total Order Value:</span>
+            <span class="font-mono font-bold" id="modalTotalCost">$0.00</span>
+          </div>
+        </div>
+
+        <div class="error-msg" id="modalErrorMsg"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modalCancelBtn">Cancel</button>
+        <button class="btn btn-buy-confirm" id="modalConfirmBtn">Confirm Buy Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deposit Funds Modal -->
+  <div class="modal-backdrop" id="depositModalBackdrop">
+    <div class="modal-dialog glass-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Deposit Capital</h3>
+        <button class="modal-close" id="depositModalCloseBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-description">Add paper trading funds to your simulated brokerage account.</p>
+        <div class="form-group">
+          <label for="depositAmountInput">Deposit Amount ($ USD):</label>
+          <input type="number" id="depositAmountInput" min="100" step="500" value="10000" class="qty-input font-mono" style="width: 100%;">
+        </div>
+        <div class="quick-amounts">
+          <button class="pill" data-amount="5000">+$5,000</button>
+          <button class="pill" data-amount="10000">+$10,000</button>
+          <button class="pill" data-amount="25000">+$25,000</button>
+          <button class="pill" data-amount="50000">+$50,000</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="depositCancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="depositConfirmBtn">Deposit Funds</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Switch User Modal -->
+  <div class="modal-backdrop" id="userModalBackdrop">
+    <div class="modal-dialog glass-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Switch / Register Trader Profile</h3>
+        <button class="modal-close" id="userModalCloseBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="switchUsernameInput">Username:</label>
+          <input type="text" id="switchUsernameInput" placeholder="e.g. sarah_trader" class="qty-input" style="width: 100%;">
+        </div>
+        <div class="form-group">
+          <label for="switchDisplayNameInput">Display Name (Optional):</label>
+          <input type="text" id="switchDisplayNameInput" placeholder="e.g. Sarah Connor" class="qty-input" style="width: 100%;">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="userCancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="userConfirmBtn">Switch Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application Logic -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
